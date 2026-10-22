@@ -22,6 +22,11 @@ use x509_cert::{
     der::{self, Reader},
 };
 
+#[cfg(feature = "sled-agent")]
+mod sled_agent;
+#[cfg(feature = "sled-agent")]
+pub use sled_agent::{HeliosRotSledAgent, HeliosRotSledAgentError};
+
 const SIGNATURE_SIZE: usize =
     core::mem::size_of::<<Signature as SignatureEncoding>::Repr>();
 
@@ -42,6 +47,12 @@ impl<const N: usize> Array<N> {
 impl<const N: usize> AsRef<[u8]> for Array<N> {
     fn as_ref(&self) -> &[u8] {
         &self.0[..]
+    }
+}
+
+impl<const N: usize> From<[u8; N]> for Array<N> {
+    fn from(item: [u8; N]) -> Self {
+        Self(item)
     }
 }
 
@@ -237,7 +248,7 @@ impl HeliosRot for HeliosOsRot {
         let Nonce::N48(nonce) = *nonce;
         let raw =
             self.do_rot_request(move |handle| handle.attest(&nonce.0)).await?;
-        let sig = P384Signature::from(raw.as_slice().try_into()?);
+        let sig = P384Signature::try_from(raw.as_slice())?;
         Ok(Attestation::P384(sig))
     }
 }
@@ -312,7 +323,7 @@ impl HeliosRot for HeliosRotMock {
 
     async fn attest(&self, nonce: &Nonce) -> Result<Attestation, Self::Error> {
         let sig: Signature = self.alias_key.try_sign(nonce.as_ref())?;
-        let sig = P384Signature::from(sig.to_bytes().as_slice().try_into()?);
+        let sig = P384Signature::try_from(sig.to_bytes().as_slice())?;
         Ok(Attestation::P384(sig))
     }
 }
