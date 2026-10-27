@@ -7,7 +7,7 @@ use sled_agent_types_versions::latest::rot as SledAgentTypes;
 use std::net::SocketAddrV6;
 use x509_cert::{Certificate, PkiPath, der::DecodePem};
 
-use crate::{Attestation, HeliosRot, Nonce};
+use crate::{Attestation, HeliosRot, QualifyingData};
 
 pub struct HeliosRotSledAgent {
     client: SledAgentClient,
@@ -59,13 +59,16 @@ impl HeliosRot for HeliosRotSledAgent {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
-    async fn attest(&self, nonce: &Nonce) -> Result<Attestation, Self::Error> {
-        let &Nonce::N48(nonce) = nonce;
+    async fn attest(
+        &self,
+        qualifying_data: &QualifyingData,
+    ) -> Result<Attestation, Self::Error> {
+        let &QualifyingData::Q48(qualifying_data) = qualifying_data;
         let attestation = self
             .client
             .rot_attest(
                 &SledAgentTypes::Rot::Helios,
-                &SledAgentTypes::Nonce::N48(nonce.0),
+                &SledAgentTypes::Nonce::N48(qualifying_data.0),
             )
             .await?
             .into_inner();
