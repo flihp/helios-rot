@@ -149,7 +149,7 @@ pub trait DynHeliosRot: Send + Sync {
     async fn dyn_get_certificates(&self) -> Result<PkiPath, DynHeliosRotError>;
     async fn dyn_attest(
         &self,
-        nonce: &Nonce,
+        qdata: &QualifyingData,
     ) -> Result<Attestation, DynHeliosRotError>;
 }
 
@@ -165,9 +165,9 @@ impl<T: HeliosRot + Send + Sync> DynHeliosRot for T {
 
     async fn dyn_attest(
         &self,
-        nonce: &Nonce,
+        qdata: &QualifyingData,
     ) -> Result<Attestation, DynHeliosRotError> {
-        HeliosRot::attest(self, nonce)
+        HeliosRot::attest(self, qdata)
             .await
             .map_err(|e| DynHeliosRotError(Box::new(e)))
     }
@@ -183,8 +183,8 @@ impl HeliosRot for dyn DynHeliosRot {
         self.dyn_get_certificates().await
     }
 
-    async fn attest(&self, nonce: &Nonce) -> Result<Attestation, Self::Error> {
-        self.dyn_attest(nonce).await
+    async fn attest(&self, qdata: &QualifyingData) -> Result<Attestation, Self::Error> {
+        self.dyn_attest(qdata).await
     }
 }
 
